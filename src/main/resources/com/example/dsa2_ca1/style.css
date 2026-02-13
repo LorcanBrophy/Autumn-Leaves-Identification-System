@@ -1,0 +1,39 @@
+.root {
+    -fx-background-color: #ffb347;
+}
+
+.menu-bar {
+}
+
+#bottomBox {
+    -fx-background-color: #ffa500;
+    -fx-padding: 15px;
+    -fx-border-color: #333333;
+    -fx-border-width: 2px;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+
+#bottomBox Button {
+    -fx-background-color: #ffd27f;
+    -fx-text-fill: #222222;
+    -fx-font-weight: bold;
+    -fx-padding: 8px 12px;
+    -fx-background-radius: 4px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 2, 0.5, 0, 1);
+}
+
+#bottomBox Button:hover {
+    -fx-background-color: #ffe0a3;
+    -fx-cursor: hand;
+}
+
+#bottomBox ComboBox {
+    -fx-background-color: #ffd27f;
+    -fx-text-fill: #222222;
+    -fx-font-weight: bold;
+    -fx-padding: 8px 12px;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 2, 0.5, 0, 1);
+}
