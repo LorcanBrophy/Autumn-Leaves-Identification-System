@@ -24,7 +24,6 @@ public class Application extends javafx.application.Application {
         stage.setTitle("Autumn Leaf Detector");
         stage.setScene(scene);
 
-
         stage.show();
     }
 }
