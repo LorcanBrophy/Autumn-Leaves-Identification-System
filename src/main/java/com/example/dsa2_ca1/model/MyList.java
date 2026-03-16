@@ -1,6 +1,6 @@
 package com.example.dsa2_ca1.model;
 
-public interface MyList<T> {
+public interface MyList<T> extends Iterable<T> {
 
     /**
      * Adds an element to the end of the list

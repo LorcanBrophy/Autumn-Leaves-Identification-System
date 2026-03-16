@@ -2,7 +2,7 @@
     -fx-background-image: url("autumn.png");
     -fx-background-repeat: repeat;
     -fx-background-size: cover;
-    -fx-background-color: linear-gradient(to bottom, #fac382, #c86717);
+    -fx-background-color: #fac382;
 }
 
 #titleLabel {
@@ -13,31 +13,55 @@
 }
 
 
+/* MENUBAR CONTAINER */
 
 .menu-bar {
-    -fx-background-color: #222222;
-    -fx-border-color: #151515;
-    -fx-border-width: 1px;
+    -fx-background-color: #2b2b2b;
+    -fx-padding: 5px;
+    -fx-spacing: 10px;
 }
 
-.menu-bar .menu {
-    -fx-font-family: "Georgia";
-    -fx-font-size: 14px;
+.menu-bar .label {
+    -fx-text-fill: white;
 }
 
-.menu-bar .menu:hover {
-    -fx-background-color: #fd932f;
+/* MENU */
+
+.menu:hover {
+    -fx-background-color: #555454;
 }
 
-#topBox {
 
+/* MENU ITEMS */
+
+.menu-item,
+.radio-menu-item {
+    -fx-background-color: #ffffff;
+}
+
+.menu-item .label {
+    -fx-text-fill: #000000;
+    -fx-font-family: "Segoe UI", sans-serif;
+    -fx-font-size: 12px;
+    -fx-padding: 2px 8px;
+}
+
+.menu-item:hover {
+    -fx-background-color: #cfcfcf;
+}
+
+.menu-item:disabled {
+    -fx-opacity: 0.6;
+    -fx-text-fill: #bdc3c7;
+}
+
+.menu-item:focused {
+    -fx-background-color: #cfcfcf;
 }
 
 #bottomBox {
-    -fx-background-color: #222222;
+    -fx-background-color: #2b2b2b;
     -fx-padding: 15px;
-    -fx-border-color: #151515;
-    -fx-border-width: 1px;
 }
 
 #showRanksCheckBox {

@@ -16,20 +16,32 @@
 <?import javafx.scene.layout.VBox?>
 
 <?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.RadioMenuItem?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.control.CheckMenuItem?>
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.example.dsa2_ca1.controller.Controller">
     <top>
         <VBox alignment="CENTER" fx:id="topBox">
             <MenuBar>
+                <fx:define>
+                    <ToggleGroup fx:id="viewToggleGroup"/>
+                </fx:define>
+
                 <Menu text="File">
                     <MenuItem text="Open..." onAction="#onChooseFile"/>
                     <MenuItem text="Exit"/>
                 </Menu>
 
                 <Menu text="Image">
-
+                    <RadioMenuItem text="Original" toggleGroup="$viewToggleGroup" onAction="#onDisplayOriginal"/>
+                    <RadioMenuItem text="Black &amp; White" toggleGroup="$viewToggleGroup" onAction="#onDisplayBW"/>
+                    <RadioMenuItem text="Random Colours" toggleGroup="$viewToggleGroup" onAction="#onDisplayRandColours"/>
+                    <RadioMenuItem text="Boundary Boxes" toggleGroup="$viewToggleGroup" onAction="#onDisplayBounds"/>
+                    <CheckMenuItem text="Show Cluster Ranks" fx:id="showRanksMenuItem" onAction="#onToggleRanks"/>
                 </Menu>
             </MenuBar>
-            <Label text="Autumn Leaf Detector" fx:id="titleLabel"/>
+
+<!--            <Label text="Autumn Leaf Detector" fx:id="titleLabel"/>-->
         </VBox>
     </top>
 
@@ -42,10 +54,8 @@
     <bottom>
         <HBox fx:id="bottomBox" spacing="10" alignment="CENTER">
             <Button fx:id="searchButton" text="Search For Total Leaves" onAction="#onSearchButtonClicked"/>
-            <ComboBox fx:id="comboBox" onAction="#onComboBoxChanged"/>
-            <Button text="Change Leaves Colour" onAction="#onChangeLeavesColour"/>
-            <Button text="Draw Rectangles Over Leaves" onAction="#onDrawBounds"/>
-            <CheckBox text="Show Cluster Numbers" fx:id="showRanksCheckBox" onAction="#onToggleRanks"/>
+            <Button fx:id="recolourOneLeaff" text="Recolour" onAction="#onColourOneLeaf"/>
+            <Button fx:id="TSP" text="TSP" onAction="#onTSP"/>
         </HBox>
     </bottom>
 

@@ -1,6 +1,7 @@
 package com.example.dsa2_ca1.model;
 
 import java.util.Arrays;
+import java.util.Iterator;
 
 public class MyArrayList<T> implements MyList<T> {
 
@@ -57,6 +58,13 @@ public class MyArrayList<T> implements MyList<T> {
 
     @Override
     public boolean remove(Object object) {
+        for (int i = 0; i < size; i++) {
+            if (elements[i].equals(object)) {
+                remove(i);
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -104,7 +112,10 @@ public class MyArrayList<T> implements MyList<T> {
 
     @Override
     public void clear() {
-
+        for (int i = 0; i < size; i++) {
+            elements[i] = null;
+        }
+        size = 0;
     }
 
     public int capacity() {
@@ -129,5 +140,23 @@ public class MyArrayList<T> implements MyList<T> {
         }
         sb.append("]");
         return sb.toString();
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        return new Iterator<T>() {
+            private int index = 0;
+
+            @Override
+            public boolean hasNext() {
+                return index < size;
+            }
+
+            @SuppressWarnings("unchecked")
+            @Override
+            public T next() {
+                return (T) elements[index++];
+            }
+        };
     }
 }

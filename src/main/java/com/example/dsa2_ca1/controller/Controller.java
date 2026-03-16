@@ -2,48 +2,51 @@ package com.example.dsa2_ca1.controller;
 
 // TODO ASK PETER IF :
 
-        /*for (int y = 0; y < height; y++) {
+        /*
+
+        for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                int index = y * width + x;
+                    int index = y * width + x;
                 }
         }
 
         for (int index = 0; index < width * height; index++) {
             int x = index % width;
             int y = index / width;
-        }*/
+        }
+
+        */
 
 
 import com.example.dsa2_ca1.model.MyArrayList;
 import com.example.dsa2_ca1.model.MyList;
 import com.example.dsa2_ca1.model.UnionFind;
 
-import javafx.event.ActionEvent;
+
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.ComboBox;
+import javafx.scene.control.CheckMenuItem;
 import javafx.scene.image.*;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.FileChooser;
+import javafx.util.Duration;
+
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class Controller {
 
-    @FXML
-    private CheckBox showRanksCheckBox;
 
     @FXML
-    private Button searchButton;
+    private CheckMenuItem showRanksMenuItem;
 
     @FXML
     private HBox imageContainer;
@@ -52,93 +55,98 @@ public class Controller {
     private ImageView originalImageView;
     private ImageView greyImageView;
 
-    private Image userImage;
     private Image resized;
 
-    @FXML
-    private ComboBox<String> comboBox;
-
     private UnionFind unionFind;
-
     private int[] binaryGrid;
     private Map<Integer, Integer> clusterSizes;
+    private boolean imageProcessed = false;
 
     private boolean drawRanks = false;
+    private final double colourThreshold = 0.3;
 
-    private final int minThreshold = 35;
-    private final int maxThreshold = 3000;
+    private Color selectedColour;
+    private final MyList<Color> selectedColours = new MyArrayList<>();
 
+    private boolean colourOneLeaf = false;
+    private boolean chooseStartNodeTSP = false;
+
+    private Map<Integer, int[]> boundingCoords;
+    private MyList<Node> nodes;
+    private GraphicsContext graphicsContextTSP;
+
+    // TODO ADD A LISTENER MAYBE ONLY WHEN USER CLICKS "CHOOSE COLOURS"
+    // TODO MAKE IT SO INSTEAD OF AVG COLOUR, CAN CHOOSE MULTIPLE COLOURS
     @FXML
     public void initialize() {
-        comboBox.getItems().addAll("Original", "Greyscale");
-        comboBox.setValue("Original");
+        originalImageView.setOnMouseClicked(event -> {
+            if (resized == null) return;
+
+            if (selectedColours.size() >= 3) {
+                System.out.println("Maximum of 3 colours already selected.");
+                return;
+            }
+
+            int x = (int) event.getX();
+            int y = (int) event.getY();
+
+            PixelReader reader = resized.getPixelReader();
+            Color clicked = reader.getColor(x, y);
+
+            selectedColours.add(clicked);
+            updateAverageSelectedColour();
+
+            imageProcessed = false;
+            binaryGrid = null;
+            clusterSizes = null;
+
+            System.out.println("Selected colours: " + selectedColours.size());
+        });
+
+
+    }
+
+    private void updateAverageSelectedColour() {
+        double r = 0, g = 0, b = 0;
+
+        for (Color c : selectedColours) {
+            r += c.getRed();
+            g += c.getGreen();
+            b += c.getBlue();
+        }
+
+        int n = selectedColours.size();
+        selectedColour = new Color(r / n, g / n, b / n, 1.0);
     }
 
     private void preprocessImage() {
-        if (resized == null) return;
+        if (selectedColour == null) {
+            System.out.println("Click a leaf to select colour first");
+            return;
+        }
+        if (imageProcessed) return;
 
         int width = (int) resized.getWidth();
         int height = (int) resized.getHeight();
 
         // 1. convert to binary grid
-        binaryGrid = imageToBinaryGrid(resized);
+        binaryGrid = buildBinaryGrid(resized);
 
         // 2. run unionFind / cluster search
-        clusterSearch(binaryGrid, width, height);
+        unionFind = buildUnionFind(binaryGrid, width, height);
 
         // 3. get clusters
-        clusterSizes = getClusterSizes(binaryGrid);
+        clusterSizes = buildValidClusters();
+
+        // compute bounding coords
+        boundingCoords = findBounds(clusterSizes);
+
+        nodes = findCentres(boundingCoords);
+
+        imageProcessed = true;
     }
 
 
-
-
-
-    @FXML
-    private void onChooseFile() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("File Explorer");
-
-        File selectedFile = fileChooser.showOpenDialog(null);
-        if (selectedFile == null) return;
-
-        userImage = new Image(selectedFile.toURI().toString());
-        resized = new Image(selectedFile.toURI().toString(), 512, 0, true, true);
-
-        originalImageView.setImage(userImage);
-
-        imageContainer.getChildren().setAll(originalImageView);
-        comboBox.setValue("Original");
-
-        binaryGrid = null;
-        clusterSizes = null;
-
-        preprocessImage();
-    }
-
-
-    private Image convertImage(Image image) {
-        int width = (int) image.getWidth();
-        int height = (int) image.getHeight();
-
-        WritableImage output = new WritableImage(width, height);
-        PixelReader reader = image.getPixelReader();
-        PixelWriter writer = output.getPixelWriter();
-
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                Color colour = reader.getColor(x, y);
-
-                double luminance = 0.3 * colour.getRed() + 0.59 * colour.getGreen() + 0.11 * colour.getBlue();
-
-                Color bwColour = luminance < 0.6 ? Color.BLACK : Color.WHITE;
-
-                writer.setColor(x, y, bwColour);
-            }
-        }
-
-        return output;
-    }
 
     /////////////////////////////////////////////////////////////////////////////////
     ///
@@ -153,114 +161,186 @@ public class Controller {
     /////////////////////////////////////////////////////////////////////////////////
 
     // step 1
-    private int[] imageToBinaryGrid(Image image) {
+    private int[] buildBinaryGrid(Image image) {
         int width = (int) image.getWidth();
         int height = (int) image.getHeight();
 
         PixelReader reader = image.getPixelReader();
-        int[] binaryGrid = new int[width * height];
+        int[] grid = new int[width * height];
+
+        double thresholdSquared = colourThreshold * colourThreshold;
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                Color colour = reader.getColor(x, y);
-                double luminance = 0.3 * colour.getRed() + 0.59 * colour.getGreen() + 0.11 * colour.getBlue();
+                Color current = reader.getColor(x, y);
+
+                double distance = colourDistance(current, selectedColour);
 
                 int currentPixel = (y * width) + x;
-                binaryGrid[currentPixel] = luminance  < 0.6 ? 0 : 1;
+
+                grid[currentPixel] = (distance < thresholdSquared) ? 1 : 0;
             }
         }
 
-        return binaryGrid;
+        return grid;
     }
 
     // step 2
-    private void clusterSearch(int[] grid, int width, int height) {
-        unionFind = new UnionFind(width * height);
+    private UnionFind buildUnionFind(int[] grid, int width, int height) {
+        UnionFind uf = new UnionFind(width * height);
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 int currentPixel = (y * width) + x;
 
-                // check if current pixel is a leaf, if true, then check adjacent pixels
                 if (grid[currentPixel] == 1) {
 
                     // left
-                    if (x > 0 && grid[currentPixel - 1] == 1) unionFind.union(currentPixel, currentPixel - 1);
+                    if (x > 0 && grid[currentPixel - 1] == 1)
+                        uf.union(currentPixel, currentPixel - 1);
 
                     // up
-                    if (y > 0 && grid[currentPixel - width] == 1) unionFind.union(currentPixel, currentPixel - width);
+                    if (y > 0 && grid[currentPixel - width] == 1)
+                        uf.union(currentPixel, currentPixel - width);
 
                     // top left
-                    if (y > 0 && x > 0 && grid[currentPixel - width - 1] == 1) unionFind.union(currentPixel, currentPixel - width - 1);
+                    if (y > 0 && x > 0 && grid[currentPixel - width - 1] == 1)
+                        uf.union(currentPixel, currentPixel - width - 1);
 
                     // top right
-                    if (y > 0 && x < width - 1 && grid[currentPixel - width + 1] == 1) unionFind.union(currentPixel, currentPixel - width + 1);
+                    if (y > 0 && x < width - 1 && grid[currentPixel - width + 1] == 1)
+                        uf.union(currentPixel, currentPixel - width + 1);
                 }
-
             }
         }
+
+        return uf;
     }
 
     // step 3
-    private Map<Integer, Integer> getClusterSizes(int[] grid) {
-        Map<Integer, Integer> map = new HashMap<>();
+    private Map<Integer, Integer> buildValidClusters() {
+
+        Map<Integer, Integer> allClusters = new HashMap<>();
 
         // counts the size of each cluster
-        for (int i = 0; i < grid.length; i++) {
-            if (grid[i] == 1) {
+        for (int i = 0; i < binaryGrid.length; i++) {
+            if (binaryGrid[i] == 1) {
                 int root = unionFind.find(i);
-                map.put(root, map.getOrDefault(root, 0) + 1);
+                allClusters.put(root, allClusters.getOrDefault(root, 0) + 1);
             }
         }
 
-        return map;
-    }
+        Map<Integer, Integer> filteredClusters = new HashMap<>();
 
+        for (Map.Entry<Integer, Integer> entry : allClusters.entrySet()) {
+            int size = entry.getValue();
 
-    private int countValidClusters(Map<Integer, Integer> map) {
-        int count = 0;
-
-        for (int size : map.values()) {
-            if (size >= minThreshold && size <= maxThreshold) {
-                count++;
-            }
+            int minThreshold = 35;
+            int maxThreshold = 3000;
+            if (size >= minThreshold && size <= maxThreshold)
+                filteredClusters.put(entry.getKey(), size);
         }
 
-        return count;
+        return filteredClusters;
     }
 
     /////////////////////////////////////////////////////////////////////////////////
 
+
+
+
+    // FILE SELECTION
+
     @FXML
-    private void onComboBoxChanged() {
-        if (userImage == null) return;
+    private void onChooseFile() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("File Explorer");
 
-        String option = comboBox.getValue();
+        File selectedFile = fileChooser.showOpenDialog(null);
+        if (selectedFile == null) return;
 
-        if (option.equals("Greyscale")) {
-            if (greyImageView == null) {
-                greyImageView = new ImageView(convertImage(resized));
-                greyImageView.setPreserveRatio(true);
-                greyImageView.setFitWidth(512);
-                greyImageView.setFitHeight(512);
-            }
 
-            Image bwImage = greyImageView.getImage();
+        // userImage = new Image(selectedFile.toURI().toString());
+        resized = new Image(selectedFile.toURI().toString(), 512, 0, true, true);
 
-            imageContainer.getChildren().setAll(originalImageView, greyImageView);
-        } else {
-            imageContainer.getChildren().setAll(originalImageView);
+        originalImageView.setImage(resized);
+
+        imageContainer.getChildren().setAll(originalImageView);
+
+        selectedColours.clear();
+        selectedColour = null;
+        imageProcessed = false;
+        binaryGrid = null;
+        clusterSizes = null;
+
+    }
+
+    public void onDisplayOriginal() {
+        imageContainer.getChildren().setAll(originalImageView);
+    }
+
+    // BW IMAGE CONVERSION
+
+    public void onDisplayBW() {
+        preprocessImage();
+        if (resized == null || selectedColour == null) return;
+
+        Image bw = convertImageWithColour(clusterSizes);
+
+        if (greyImageView == null) {
+            greyImageView = new ImageView();
+            greyImageView.setPreserveRatio(true);
+            greyImageView.setFitWidth(512);
+            greyImageView.setFitHeight(512);
         }
+        greyImageView.setImage(bw);
+
+        imageContainer.getChildren().setAll(originalImageView, greyImageView);
+
     }
 
-    public void onSearchButtonClicked() {
-        System.out.println("Total Leaves: " + countValidClusters(clusterSizes));
+    private Image convertImageWithColour(Map<Integer, Integer> map) {
+        int width = (int) resized.getWidth();
+        int height = (int) resized.getHeight();
+
+        WritableImage output = new WritableImage(width, height);
+        PixelReader reader = resized.getPixelReader();
+        PixelWriter writer = output.getPixelWriter();
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int currentPixel = (y * width) + x;
+                int root = unionFind.find(currentPixel);
+
+                if (map.containsKey(root)) {
+                    writer.setColor(x, y, Color.WHITE);
+                } else {
+                    writer.setColor(x, y, Color.BLACK);
+                }
+            }
+        }
+
+        return output;
     }
 
-    public void onChangeLeavesColour() {
+    private double colourDistance(Color currentColour, Color userColour) {
+
+        double r = currentColour.getRed() - userColour.getRed();
+        double g = currentColour.getGreen() - userColour.getGreen();
+        double b = currentColour.getBlue() - userColour.getBlue();
+
+        return (r * r) + (g * g) + (b * b);
+    }
+
+    // COLOUR DISJOINT SET
+
+    public void onDisplayRandColours() {
+        preprocessImage();
+        if (binaryGrid == null) return;
+
 
         // create new recoloured image
-        Image recolored = recolorClusters(binaryGrid, (int) resized.getWidth(), (int) resized.getHeight(), getClusterSizes(binaryGrid));
+        Image recolored = recolorClusters(clusterSizes);
         ImageView recoloredImageView = new ImageView(recolored);
 
         // add image to HBox
@@ -271,7 +351,10 @@ public class Controller {
     // 2. compute currentPixel
     // 3. if the pixel is valid, find its root
     // 4.
-    private Image recolorClusters(int[] grid, int width, int height, Map<Integer, Integer> map) {
+    private Image recolorClusters(Map<Integer, Integer> map) {
+        int width = (int) resized.getWidth();
+        int height = (int) resized.getHeight();
+
         WritableImage output = new WritableImage(width, height);
         PixelWriter writer = output.getPixelWriter();
 
@@ -281,11 +364,10 @@ public class Controller {
             for (int x = 0; x < width; x++) {
                 int currentPixel = (y * width) + x;
 
-                if (grid[currentPixel] == 1) {
+                if (binaryGrid[currentPixel] == 1) {
                     int root = unionFind.find(currentPixel);
-                    int size = map.get(root);
 
-                    if (size >= minThreshold && size <= maxThreshold) {
+                    if (map.containsKey(root)) {
                         colourMap.putIfAbsent(root, Color.color(Math.random(), Math.random(), Math.random()));
                         writer.setColor(x, y, colourMap.get(root));
                     } else {
@@ -300,17 +382,101 @@ public class Controller {
         return output;
     }
 
+    // COLOUR ONE LEAF IN BW IMAGE
 
+    @FXML
+    private void onColourOneLeaf() {
+        if (resized == null) return;
+        preprocessImage();
 
+        Image bw = convertImageWithColour(clusterSizes);
 
+        Canvas canvas = new Canvas(resized.getWidth(), resized.getHeight());
+        graphicsContextTSP = canvas.getGraphicsContext2D();
+        graphicsContextTSP.drawImage(bw, 0, 0);
 
+        imageContainer.getChildren().setAll(originalImageView, canvas);
 
+        colourOneLeaf = true;
+        System.out.println("Click on a leaf in the image to recolour it.");
 
+        canvas.setOnMouseClicked(event -> {
+            if (!colourOneLeaf) return;
 
-    ///////////////////////////////////////////////////////
-    ///  DRAW RECTANGLES OVER LEAVES
+            Image result = colourClickedCluster(event, clusterSizes);
+            if (result == null) return;
 
-    private Map<Integer, int[]> findBounds(int[] grid, int width, int height, Map<Integer, Integer> map) {
+            // update canvas with recoloured leaf
+            graphicsContextTSP.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+            graphicsContextTSP.drawImage(result, 0, 0);
+
+            colourOneLeaf = false;
+        });
+
+    }
+
+    private Image colourClickedCluster(MouseEvent mouseEvent, Map<Integer, Integer> map) {
+        if (resized == null || binaryGrid == null || unionFind == null) return null;
+
+        int userX = (int) mouseEvent.getX();
+        int userY = (int) mouseEvent.getY();
+
+        int width = (int) resized.getWidth();
+        int height = (int) resized.getHeight();
+
+        int userPixel = (userY * width) + userX;
+
+        if (binaryGrid[userPixel] == 0) return null;
+
+        int userRoot = unionFind.find(userPixel);
+
+        WritableImage output = new WritableImage(width, height);
+        PixelWriter writer = output.getPixelWriter();
+
+        Color clusterColour = Color.color(Math.random(), Math.random(), Math.random());
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int currentPixel = (y * width) + x;
+                int root = unionFind.find(currentPixel);
+
+                if (map.containsKey(root)) {
+                    if (root == userRoot)
+                        writer.setColor(x, y, clusterColour);
+                    else
+                        writer.setColor(x, y, Color.WHITE);
+                } else {
+                    writer.setColor(x, y, Color.BLACK);
+                }
+
+            }
+        }
+
+        return output;
+    }
+
+    // DRAW BOUNDARY BOXES
+
+    public void onDisplayBounds() {
+        preprocessImage();
+
+        if (binaryGrid == null) return;
+
+        // compute order of ranks
+        Map<Integer, Integer> ranks = orderClusters(clusterSizes);
+
+        // draw image with rectangles
+        Canvas canvas = drawBounds(resized, boundingCoords, ranks);
+
+        // add image to HBox
+        imageContainer.getChildren().setAll(originalImageView, canvas);
+
+    }
+
+    private Map<Integer, int[]> findBounds(Map<Integer, Integer> validClusters) {
+        int width = (int) resized.getWidth();
+        int height = (int) resized.getHeight();
+
         // root -> [minX, maxX, minY, maxY]
         Map<Integer, int[]> boundingCoords = new HashMap<>();
 
@@ -322,11 +488,11 @@ public class Controller {
                 int currentPixel = (y * width) + x;
 
                 // 3. if the pixel is valid, find its root
-                if (grid[currentPixel] == 1) {
+                if (binaryGrid[currentPixel] == 1) {
                     int root = unionFind.find(currentPixel);
-                    int size = map.get(root);
 
-                    if (size >= minThreshold && size <= maxThreshold) {
+
+                    if (validClusters.containsKey(root)) {
 
                         // 4. update bounding box associated with that root
                         boundingCoords.putIfAbsent(root, new int[]{x, x, y, y});
@@ -386,41 +552,26 @@ public class Controller {
         return canvas;
     }
 
+    // SHOW ORDER OF SETS
 
-    public void onDrawBounds() {
-
-        // compute bounding coords
-        Map<Integer, int[]> boundingCoords = findBounds(binaryGrid, (int) resized.getWidth(), (int) resized.getHeight(), clusterSizes);
-
-        // compute order of ranks
-        Map<Integer, Integer> ranks = orderClusters(getClusterSizes(binaryGrid));
-
-        // draw image with rectangles
-        Canvas canvas = drawBounds(resized, boundingCoords, ranks);
-
-        // add image to HBox
-        imageContainer.getChildren().setAll(originalImageView, canvas);
-
+    public void onToggleRanks() {
+        drawRanks = showRanksMenuItem.isSelected();
     }
 
-    ///////////////////////////////////////////////////////
-
-
-
     private Map<Integer, Integer> orderClusters(Map<Integer, Integer> map) {
+
         MyList<int[]> clusters = new MyArrayList<>();
 
         // fill list with [root, size]
         for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
-            if (entry.getValue() >= minThreshold && entry.getValue() <= maxThreshold)
-                clusters.add(new int[]{entry.getKey(), entry.getValue()});
+            clusters.add(new int[]{entry.getKey(), entry.getValue()});
         }
 
+        // TODO MAKE IT NOT BUBBLE SORT
         // sort bubble
         for (int i = 0; i < clusters.size() - 1; i++) {
             for (int j = 0; j < clusters.size() - 1 - i; j++) {
                 if (clusters.get(j)[1] < clusters.get(j + 1)[1]) {
-                    // swap
                     int[] temp = clusters.get(j);
                     clusters.set(j, clusters.get(j + 1));
                     clusters.set(j + 1, temp);
@@ -431,7 +582,6 @@ public class Controller {
 
         // assign ranks
         Map<Integer, Integer> clusterRanks = new HashMap<>();
-
         for (int i = 0; i < clusters.size(); i++) {
             int root = clusters.get(i)[0];
             clusterRanks.put(root, i + 1);
@@ -440,7 +590,172 @@ public class Controller {
         return clusterRanks;
     }
 
-    public void onToggleRanks() {
-        drawRanks = showRanksCheckBox.isSelected();
+    // COUNT NUM OF LEAVES
+
+    public void onSearchButtonClicked() {
+        preprocessImage();
+        if (clusterSizes == null) return;
+
+        System.out.println("Total Leaves: " + countValidClusters());
     }
+
+    private int countValidClusters() {
+        return clusterSizes.size();
+    }
+
+
+    // TSP
+
+    // 1. find centre of node
+    // 2. use nearest neighbor to find the closest node
+    // 3. draw line between them
+
+    public void onTSP() {
+        if (resized == null) return;
+        preprocessImage();
+
+        // draw boundary boxes over image
+        Canvas canvas = drawBounds(resized, boundingCoords, null);
+
+        // get graphics context
+        graphicsContextTSP = canvas.getGraphicsContext2D();
+
+        imageContainer.getChildren().setAll(originalImageView, canvas);
+
+        chooseStartNodeTSP = true;
+        System.out.println("Click on a leaf.");
+
+        canvas.setOnMouseClicked(event -> {
+            if (!chooseStartNodeTSP) return;
+
+            Node start = findClickedNode(event);
+            if (start == null) return;
+
+            // compute TSP path
+            MyList<Node> path = nearestNeighbour(nodes, start);
+
+            // animate the path
+            animateTSP(path, graphicsContextTSP);
+
+            chooseStartNodeTSP = false;
+        });
+
+    }
+
+    private Node findClickedNode(MouseEvent mouseEvent) {
+        if (resized == null || binaryGrid == null || unionFind == null) return null;
+
+        int userX = (int) mouseEvent.getX();
+        int userY = (int) mouseEvent.getY();
+
+        int width = (int) resized.getWidth();
+        int height = (int) resized.getHeight();
+
+        int userPixel = (userY * width) + userX;
+
+        if (binaryGrid[userPixel] == 0) return null;
+
+        int userRoot = unionFind.find(userPixel);
+
+        return new Node(userRoot, userX, userY);
+    }
+
+
+
+    private record Node(int root, double x, double y) {}
+
+    private MyList<Node> findCentres(Map<Integer, int[]> bounds) {
+        MyList<Node> nodes = new MyArrayList<>();
+
+        for (Map.Entry<Integer, int[]> entry : bounds.entrySet()) {
+            int root = entry.getKey();
+            int[] coords = entry.getValue();
+
+            double centreX = (coords[0] + coords[1]) / 2.0;
+            double centreY = (coords[2] + coords[3]) / 2.0;
+
+            nodes.add(new Node(root, centreX, centreY));
+        }
+
+        return nodes;
+    }
+
+    // 1. create a list of all unvisited nodes
+    // 2. choose a node and mark it unvisited
+    // 3. find distance between current node and all unvisited nodes
+    // 4. choose node with the shortest distance
+    // 5. remove selected node from unvisited list
+
+    private double tspDistance(Node a, Node b) {
+        double distX = a.x() - b.x();
+        double distY = a.y() - b.y();
+
+        return (distX * distX) + (distY *  distY);
+    }
+
+
+    private MyList<Node> nearestNeighbour(MyList<Node> nodes, Node start) {
+
+        MyList<Node> path = new MyArrayList<>();
+        MyList<Node> unvisited = new MyArrayList<>();
+
+        // copy nodes into unvisited
+        for (int i = 0; i < nodes.size(); i++) {
+            unvisited.add(nodes.get(i));
+        }
+
+        Node current = start;
+        path.add(current);
+        unvisited.remove(current);
+
+        while (!unvisited.isEmpty()) {
+            Node nearest = null;
+            double shortestDistance = Double.MAX_VALUE;
+
+            for (int i = 0; i < unvisited.size(); i++) {
+                Node candidate = unvisited.get(i);
+                double distance = tspDistance(current, candidate);
+
+                if (distance < shortestDistance) {
+                    shortestDistance = distance;
+                    nearest = candidate;
+
+                }
+            }
+
+            path.add(nearest);
+            unvisited.remove(nearest);
+            current = nearest;
+        }
+
+        return path;
+    }
+
+    private void animateTSP(MyList<Node> path, GraphicsContext graphicsContext) {
+
+        Timeline timeline = new Timeline();
+
+        double interval = 5000.0 / path.size();
+
+        for (int i = 1; i < path.size(); i++) {
+
+            Node previous = path.get(i - 1);
+            Node current = path.get(i);
+
+            KeyFrame keyFrame = new KeyFrame(Duration.millis(i * interval), _ -> {
+                graphicsContext.setStroke(Color.RED);
+                graphicsContext.setLineWidth(2.0);
+
+                graphicsContext.strokeLine(previous.x(), previous.y(), current.x(), current.y());
+            });
+
+            timeline.getKeyFrames().add(keyFrame);
+
+        }
+
+        timeline.play();
+
+
+    }
+
 }
