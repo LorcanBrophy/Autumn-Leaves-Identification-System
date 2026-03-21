@@ -42,9 +42,4 @@ public class UnionFind {
             rank[rootP]++;
         }
     }
-
-    // check if two elements are in the same set
-    public boolean connected(int p, int q) {
-        return find(p) == find(q);
-    }
 }

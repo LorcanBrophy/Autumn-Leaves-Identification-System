@@ -29,10 +29,12 @@ import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.CheckMenuItem;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.FileChooser;
@@ -60,6 +62,8 @@ public class Controller {
     private UnionFind unionFind;
     private int[] binaryGrid;
     private Map<Integer, Integer> clusterSizes;
+    private Map<Integer, Integer> clusterRanks;
+
     private boolean imageProcessed = false;
 
     private boolean drawRanks = false;
@@ -70,6 +74,7 @@ public class Controller {
 
     private boolean colourOneLeaf = false;
     private boolean chooseStartNodeTSP = false;
+    private boolean displayTooltip = false;
 
     private Map<Integer, int[]> boundingCoords;
     private MyList<Node> nodes;
@@ -137,6 +142,9 @@ public class Controller {
 
         // 3. get clusters
         clusterSizes = buildValidClusters();
+
+        // 4. get clusterRanks
+        clusterRanks = orderClusters(clusterSizes);
 
         // compute bounding coords
         boundingCoords = findBounds(clusterSizes);
@@ -462,11 +470,8 @@ public class Controller {
 
         if (binaryGrid == null) return;
 
-        // compute order of ranks
-        Map<Integer, Integer> ranks = orderClusters(clusterSizes);
-
         // draw image with rectangles
-        Canvas canvas = drawBounds(resized, boundingCoords, ranks);
+        Canvas canvas = drawBounds(resized, boundingCoords, clusterRanks);
 
         // add image to HBox
         imageContainer.getChildren().setAll(originalImageView, canvas);
@@ -699,7 +704,6 @@ public class Controller {
         MyList<Node> path = new MyArrayList<>();
         MyList<Node> unvisited = new MyArrayList<>();
 
-        // copy nodes into unvisited
         for (int i = 0; i < nodes.size(); i++) {
             unvisited.add(nodes.get(i));
         }
@@ -755,6 +759,43 @@ public class Controller {
 
         timeline.play();
 
+
+    }
+
+
+    // REPORT SIZE OF LEAF IN PIXELS
+
+    // DISPLAY CANVAS OF BOUNDING BOX
+    // ADD LISTENER
+    // DISPLAY TOOLTIP SHOWING RANK/SIZE
+
+    public void onDisplayTooltip() {
+        if (resized == null) return;
+        preprocessImage();
+
+        // draw boundary boxes over image
+        Canvas canvas = drawBounds(resized, boundingCoords, null);
+
+        displayTooltip = true;
+        canvas.setOnMouseClicked(event -> {
+            if (!displayTooltip) return;
+
+            Node clickedNode = findClickedNode(event);
+            if (clickedNode == null) return;
+
+            int root = clickedNode.root;
+
+            Tooltip tooltip = new Tooltip("Leaf/Cluster Number: " + clusterRanks.get(root) + "\nSize (in pixels): " + clusterSizes.get(root));
+
+            int x = (int) event.getX();
+            int y = (int) event.getY();
+
+            Rectangle rectangle = new Rectangle(x, y);
+
+            Tooltip.install(rectangle, tooltip);
+
+            displayTooltip = false;
+        });
 
     }
 
