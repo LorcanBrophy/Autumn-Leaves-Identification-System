@@ -27,6 +27,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.geometry.Point2D;
+import javafx.geometry.Pos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.CheckMenuItem;
@@ -60,6 +61,8 @@ public class Controller {
     @FXML
     private HBox colourCalibrationContainer2;
     @FXML
+    private HBox colourCalibrationContainer3;
+    @FXML
     private VBox colourCalibrationContainerVBOX;
 
     @FXML
@@ -83,33 +86,75 @@ public class Controller {
     private MyList<Node> nodes;
     private GraphicsContext graphicsContextTSP;
 
+    private State currentState;
+
     // TODO ADD A LISTENER MAYBE ONLY WHEN USER CLICKS "CHOOSE COLOURS"
     // TODO MAKE IT SO INSTEAD OF AVG COLOUR, CAN CHOOSE MULTIPLE COLOURS
     @FXML
     public void initialize() {
-        /*originalImageView.setOnMouseClicked(event -> {
-            if (resized == null) return;
 
-            if (selectedColours.size() >= 3) {
-                System.out.println("Maximum of 3 colours already selected.");
-                return;
-            }
+        currentState = State.NO_IMAGE;
 
-            int x = (int) event.getX();
-            int y = (int) event.getY();
+        showTutorial("No image selected", "Go to File → Open... to load an image");
 
-            PixelReader reader = resized.getPixelReader();
-            Color clicked = reader.getColor(x, y);
+    }
 
-            selectedColours.add(clicked);
-            updateAverageSelectedColour();
+    private enum State {
+        NO_IMAGE,
+        IMAGE_LOADED,
+        CALIBRATING,
+        CALIBRATED,
+        SEARCHING,
+        COLOUR_ONE_LEAF,
+        TSP,
+        TOOLTIP;
+    }
 
-            imageProcessed = false;
-            binaryGrid = null;
-            clusterSizes = null;
+    private void updateUI() {
+        switch (currentState) {
+            case NO_IMAGE:
+                showTutorial("No image selected", "Go to File → Open... to load an image");
+                break;
+            case IMAGE_LOADED:
+                showTutorial("Image loaded", "Setup → Select Colours", originalImageView);
+                break;
+            case CALIBRATING:
+                showTutorial("Colour Selection", "Click the image 3 times to select the colours", colourCalibrationContainer3);
+                break;
+            case CALIBRATED:
+                showTutorial("Colour Selection Complete", "", colourCalibrationContainer3);
+                break;
+            case SEARCHING:
+                showTutorial("Total leaves", "Approximately " + countValidClusters() + " Leaves", originalImageView);
+                break;
+            case COLOUR_ONE_LEAF:
+                showTutorial("Colour One Leaf", "Click the white leaves to set them to random colours", colourCalibrationContainer3);
+                break;
+            case TSP:
+                showTutorial("TSP Animation", "Click a leaf in a rectangle to start animation", colourCalibrationContainer3);
+                break;
+            case TOOLTIP:
+                showTutorial("Size Tooltip", "Click any leaf in a rectangle to show the tooltip", colourCalibrationContainer3);
+                break;
+        }
+    }
 
-            System.out.println("Selected colours: " + selectedColours.size());
-        });*/
+    private void showTutorial(String titleText, String instructionText, javafx.scene.Node... extraNodes) {
+        VBox box = new VBox(10);
+        box.setAlignment(Pos.CENTER);
+
+        Label title = new Label(titleText);
+        title.getStyleClass().add("placeholder-title");
+
+        Label instruction = new Label(instructionText);
+        instruction.getStyleClass().add("placeholder-instruction");
+
+        box.getChildren().addAll(title, instruction);
+        if (extraNodes.length > 0) {
+            box.getChildren().addAll(extraNodes);
+        }
+
+        imageContainer.getChildren().setAll(box);
     }
 
 
@@ -130,6 +175,9 @@ public class Controller {
     @FXML
     private void calibrateColour() {
         if (resized == null) return;
+
+        currentState = State.CALIBRATING;
+        updateUI();
 
         numColourSelected = 0;
         selectedColours.clear();
@@ -162,7 +210,7 @@ public class Controller {
         colourCalibrationContainerVBOX.getChildren().setAll(colourCalibrationContainer, colourCalibrationContainer2);
 
         // add to main container
-        imageContainer.getChildren().setAll(originalImageView, colourCalibrationContainerVBOX);
+        colourCalibrationContainer3.getChildren().setAll(originalImageView, colourCalibrationContainerVBOX);
 
         // shows colour hovered over
         originalImageView.setOnMouseMoved(event -> {
@@ -203,6 +251,9 @@ public class Controller {
                 System.out.println("Calibration complete.");
                 imageProcessed = false;
                 preprocessImage();
+
+                currentState = State.CALIBRATED;
+                updateUI();
             }
         });
     }
@@ -385,6 +436,9 @@ public class Controller {
         binaryGrid = null;
         clusterSizes = null;
 
+        currentState = State.IMAGE_LOADED;
+        updateUI();
+
     }
 
     public void onDisplayOriginal() {
@@ -500,13 +554,16 @@ public class Controller {
         if (resized == null) return;
         preprocessImage();
 
+        currentState = State.COLOUR_ONE_LEAF;
+        updateUI();
+
         Image bw = convertImageWithColour(clusterSizes);
 
         Canvas canvas = new Canvas(resized.getWidth(), resized.getHeight());
         graphicsContextTSP = canvas.getGraphicsContext2D();
         graphicsContextTSP.drawImage(bw, 0, 0);
 
-        imageContainer.getChildren().setAll(originalImageView, canvas);
+        colourCalibrationContainer3.getChildren().setAll(originalImageView, canvas);
 
         System.out.println("Click on a leaf in the image to recolour it.");
 
@@ -690,13 +747,13 @@ public class Controller {
         preprocessImage();
         if (clusterSizes == null) return;
 
-        System.out.println("Total Leaves: " + countValidClusters());
+        currentState = State.SEARCHING;
+        updateUI();
     }
 
     private int countValidClusters() {
         return clusterSizes.size();
     }
-
 
     // TSP
 
@@ -708,13 +765,16 @@ public class Controller {
         if (resized == null) return;
         preprocessImage();
 
+        currentState = State.TSP;
+        updateUI();
+
         // draw boundary boxes over image
         Canvas canvas = drawBounds(resized, boundingCoords, null);
 
         // get graphics context
         graphicsContextTSP = canvas.getGraphicsContext2D();
 
-        imageContainer.getChildren().setAll(originalImageView, canvas);
+        colourCalibrationContainer3.getChildren().setAll(originalImageView, canvas);
 
         System.out.println("Click on a leaf.");
 
@@ -726,7 +786,7 @@ public class Controller {
             MyList<Node> path = nearestNeighbour(nodes, start);
 
             // animate the path
-            animateTSP(path, graphicsContextTSP);
+            animateTSP(path, graphicsContextTSP, boundingCoords);
         });
 
     }
@@ -815,11 +875,10 @@ public class Controller {
         return path;
     }
 
-    private void animateTSP(MyList<Node> path, GraphicsContext graphicsContext) {
+    private void animateTSP(MyList<Node> path, GraphicsContext graphicsContext, Map<Integer, int[]> boundingCoords) {
 
         Timeline timeline = new Timeline();
-
-        double interval = 5000.0 / path.size();
+        double interval = 6000.0 / path.size(); // ms
 
         for (int i = 1; i < path.size(); i++) {
 
@@ -827,19 +886,43 @@ public class Controller {
             Node current = path.get(i);
 
             KeyFrame keyFrame = new KeyFrame(Duration.millis(i * interval), _ -> {
-                graphicsContext.setStroke(Color.RED);
-                graphicsContext.setLineWidth(2.0);
 
+                // draw red line
+                graphicsContext.setStroke(Color.RED);
+                graphicsContext.setLineWidth(1.0);
                 graphicsContext.strokeLine(previous.x(), previous.y(), current.x(), current.y());
+
+                /*int[] prevBounds = boundingCoords.get(previous.root);
+                if (prevBounds != null) {
+                    int minX = prevBounds[0];
+                    int maxX = prevBounds[1];
+                    int minY = prevBounds[2];
+                    int maxY = prevBounds[3];
+
+                    graphicsContext.setStroke(Color.BLUE);
+                    graphicsContext.strokeRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+                }*/
+
+                int[] bounds = boundingCoords.get(current.root);
+
+                if (bounds != null) {
+                    int minX = bounds[0];
+                    int maxX = bounds[1];
+                    int minY = bounds[2];
+                    int maxY = bounds[3];
+
+                    graphicsContext.setStroke(Color.WHITE);
+                    graphicsContext.strokeRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+
+                    graphicsContext.setStroke(Color.YELLOW);
+                    graphicsContext.strokeRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+                }
             });
 
             timeline.getKeyFrames().add(keyFrame);
-
         }
 
         timeline.play();
-
-
     }
 
 
@@ -853,10 +936,13 @@ public class Controller {
         if (resized == null) return;
         preprocessImage();
 
+        currentState = State.TOOLTIP;
+        updateUI();
+
         // draw boundary boxes over image
         Canvas canvas = drawBounds(resized, boundingCoords, null);
 
-        imageContainer.getChildren().setAll(originalImageView, canvas);
+        colourCalibrationContainer3.getChildren().setAll(originalImageView, canvas);
 
         Tooltip tooltip = new Tooltip();
         tooltip.setShowDelay(Duration.millis(100));

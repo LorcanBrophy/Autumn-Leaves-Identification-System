@@ -32,17 +32,24 @@
                     <MenuItem text="Exit"/>
                 </Menu>
 
+                <Menu text="Setup">
+                    <MenuItem text="Select Colours" onAction="#calibrateColour"/>
+                </Menu>
+
+                <Menu text="Operations">
+                    <MenuItem text="Total Leaves" onAction="#onSearchButtonClicked"/>
+                    <RadioMenuItem text="Animate TSP" toggleGroup="$viewToggleGroup" onAction="#onTSP"/>
+                    <RadioMenuItem text="Show Tooltip" toggleGroup="$viewToggleGroup" onAction="#onDisplayTooltip"/>
+                </Menu>
+
                 <Menu text="Image">
                     <RadioMenuItem text="Original" toggleGroup="$viewToggleGroup" onAction="#onDisplayOriginal"/>
                     <RadioMenuItem text="Black &amp; White" toggleGroup="$viewToggleGroup" onAction="#onDisplayBW"/>
                     <RadioMenuItem text="Random Colours" toggleGroup="$viewToggleGroup" onAction="#onDisplayRandColours"/>
                     <RadioMenuItem text="Colour One Leaf" toggleGroup="$viewToggleGroup" onAction="#onColourOneLeaf"/>
                     <RadioMenuItem text="Boundary Boxes" toggleGroup="$viewToggleGroup" onAction="#onDisplayBounds"/>
+
                     <CheckMenuItem text="Show Cluster Ranks" fx:id="showRanksMenuItem" onAction="#onToggleRanks"/>
-
-                    <RadioMenuItem text="Animate TSP" toggleGroup="$viewToggleGroup" onAction="#onTSP"/>
-                    <RadioMenuItem text="Show Tooltip" toggleGroup="$viewToggleGroup" onAction="#onDisplayTooltip"/>
-
                 </Menu>
             </MenuBar>
 
@@ -56,14 +63,15 @@
             <VBox fx:id="colourCalibrationContainerVBOX" spacing="10" alignment="CENTER">
                 <HBox fx:id="colourCalibrationContainer" spacing="10" alignment="CENTER"/>
                 <HBox fx:id="colourCalibrationContainer2" spacing="10" alignment="CENTER"/>
+                <HBox fx:id="colourCalibrationContainer3" spacing="10" alignment="CENTER"/>
             </VBox>
         </HBox>
     </center>
 
     <bottom>
         <HBox fx:id="bottomBox" spacing="10" alignment="CENTER">
-            <Button fx:id="searchButton" text="Search For Total Leaves" onAction="#onSearchButtonClicked"/>
-            <Button fx:id="" text="Calibrate Colours" onAction="#calibrateColour"/>
+            <Button text="Search For Total Leaves" onAction="#onSearchButtonClicked"/>
+            <Button text="Calibrate Colours" onAction="#calibrateColour"/>
         </HBox>
     </bottom>
 

@@ -42,4 +42,8 @@ public class UnionFind {
             rank[rootP]++;
         }
     }
+
+    public int getRank(int i) {
+        return rank[i];
+    }
 }

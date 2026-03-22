@@ -52,10 +52,6 @@ public class MyArrayList<T> implements MyList<T> {
         return old;
     }
 
-    private boolean add(int index, T element) {
-        return false;
-    }
-
     @Override
     public boolean remove(Object object) {
         for (int i = 0; i < size; i++) {
