@@ -159,7 +159,7 @@ public class Controller {
 
 
 
-    private Color selectedColour;
+    public Color selectedColour;
     private final MyList<Color> selectedColours = new MyArrayList<>();
 
     private int numColourSelected = 0;
@@ -323,7 +323,7 @@ public class Controller {
     /////////////////////////////////////////////////////////////////////////////////
 
     // step 1
-    private int[] buildBinaryGrid(Image image) {
+    public int[] buildBinaryGrid(Image image) {
         int width = (int) image.getWidth();
         int height = (int) image.getHeight();
 
@@ -718,18 +718,8 @@ public class Controller {
             clusters.add(new int[]{entry.getKey(), entry.getValue()});
         }
 
-        // TODO MAKE IT NOT BUBBLE SORT
-        // sort bubble
-        for (int i = 0; i < clusters.size() - 1; i++) {
-            for (int j = 0; j < clusters.size() - 1 - i; j++) {
-                if (clusters.get(j)[1] < clusters.get(j + 1)[1]) {
-                    int[] temp = clusters.get(j);
-                    clusters.set(j, clusters.get(j + 1));
-                    clusters.set(j + 1, temp);
-                }
-            }
-        }
-
+        // call separate bubble sort method
+        bubbleSort(clusters);
 
         // assign ranks
         Map<Integer, Integer> clusterRanks = new HashMap<>();
@@ -739,6 +729,18 @@ public class Controller {
         }
 
         return clusterRanks;
+    }
+
+    public void bubbleSort(MyList<int[]> clusters) {
+        for (int i = 0; i < clusters.size() - 1; i++) {
+            for (int j = 0; j < clusters.size() - 1 - i; j++) {
+                if (clusters.get(j)[1] < clusters.get(j + 1)[1]) {
+                    int[] temp = clusters.get(j);
+                    clusters.set(j, clusters.get(j + 1));
+                    clusters.set(j + 1, temp);
+                }
+            }
+        }
     }
 
     // COUNT NUM OF LEAVES
