@@ -36,8 +36,13 @@
                     <RadioMenuItem text="Original" toggleGroup="$viewToggleGroup" onAction="#onDisplayOriginal"/>
                     <RadioMenuItem text="Black &amp; White" toggleGroup="$viewToggleGroup" onAction="#onDisplayBW"/>
                     <RadioMenuItem text="Random Colours" toggleGroup="$viewToggleGroup" onAction="#onDisplayRandColours"/>
+                    <RadioMenuItem text="Colour One Leaf" toggleGroup="$viewToggleGroup" onAction="#onColourOneLeaf"/>
                     <RadioMenuItem text="Boundary Boxes" toggleGroup="$viewToggleGroup" onAction="#onDisplayBounds"/>
                     <CheckMenuItem text="Show Cluster Ranks" fx:id="showRanksMenuItem" onAction="#onToggleRanks"/>
+
+                    <RadioMenuItem text="Animate TSP" toggleGroup="$viewToggleGroup" onAction="#onTSP"/>
+                    <RadioMenuItem text="Show Tooltip" toggleGroup="$viewToggleGroup" onAction="#onDisplayTooltip"/>
+
                 </Menu>
             </MenuBar>
 
@@ -48,15 +53,17 @@
     <center>
         <HBox fx:id="imageContainer" spacing="10" alignment="CENTER">
             <ImageView fx:id="originalImageView" preserveRatio="true" fitWidth="512" fitHeight="512"/>
+            <VBox fx:id="colourCalibrationContainerVBOX" spacing="10" alignment="CENTER">
+                <HBox fx:id="colourCalibrationContainer" spacing="10" alignment="CENTER"/>
+                <HBox fx:id="colourCalibrationContainer2" spacing="10" alignment="CENTER"/>
+            </VBox>
         </HBox>
     </center>
 
     <bottom>
         <HBox fx:id="bottomBox" spacing="10" alignment="CENTER">
             <Button fx:id="searchButton" text="Search For Total Leaves" onAction="#onSearchButtonClicked"/>
-            <Button fx:id="recolourOneLeaff" text="Recolour" onAction="#onColourOneLeaf"/>
-            <Button fx:id="TSP" text="TSP" onAction="#onTSP"/>
-            <Button fx:id="Tooltip" text="Tooltip" onAction="#onDisplayTooltip"/>
+            <Button fx:id="" text="Calibrate Colours" onAction="#calibrateColour"/>
         </HBox>
     </bottom>
 

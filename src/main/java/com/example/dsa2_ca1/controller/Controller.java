@@ -26,13 +26,16 @@ import com.example.dsa2_ca1.model.UnionFind;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
+import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.CheckMenuItem;
+import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
@@ -52,10 +55,17 @@ public class Controller {
 
     @FXML
     private HBox imageContainer;
+    @FXML
+    private HBox colourCalibrationContainer;
+    @FXML
+    private HBox colourCalibrationContainer2;
+    @FXML
+    private VBox colourCalibrationContainerVBOX;
 
     @FXML
     private ImageView originalImageView;
     private ImageView greyImageView;
+
 
     private Image resized;
 
@@ -67,14 +77,7 @@ public class Controller {
     private boolean imageProcessed = false;
 
     private boolean drawRanks = false;
-    private final double colourThreshold = 0.3;
 
-    private Color selectedColour;
-    private final MyList<Color> selectedColours = new MyArrayList<>();
-
-    private boolean colourOneLeaf = false;
-    private boolean chooseStartNodeTSP = false;
-    private boolean displayTooltip = false;
 
     private Map<Integer, int[]> boundingCoords;
     private MyList<Node> nodes;
@@ -84,7 +87,7 @@ public class Controller {
     // TODO MAKE IT SO INSTEAD OF AVG COLOUR, CAN CHOOSE MULTIPLE COLOURS
     @FXML
     public void initialize() {
-        originalImageView.setOnMouseClicked(event -> {
+        /*originalImageView.setOnMouseClicked(event -> {
             if (resized == null) return;
 
             if (selectedColours.size() >= 3) {
@@ -106,9 +109,109 @@ public class Controller {
             clusterSizes = null;
 
             System.out.println("Selected colours: " + selectedColours.size());
+        });*/
+    }
+
+
+
+    private Color selectedColour;
+    private final MyList<Color> selectedColours = new MyArrayList<>();
+
+    private int numColourSelected = 0;
+
+    int rectSize = 164;
+    private final Rectangle rectColourHover = new Rectangle(rectSize, rectSize);
+    private final Rectangle rectColour1 = new Rectangle(rectSize, rectSize);
+    private final Rectangle rectColour2 = new Rectangle(rectSize, rectSize);
+    private final Rectangle rectColour3 = new Rectangle(rectSize, rectSize);
+    private final Rectangle rectColourAverage = new Rectangle(rectSize, rectSize);
+
+
+    @FXML
+    private void calibrateColour() {
+        if (resized == null) return;
+
+        numColourSelected = 0;
+        selectedColours.clear();
+
+        // colour rects
+        rectColourHover.setStroke(Color.BLACK);
+        rectColour1.setStroke(Color.BLACK);
+        rectColour2.setStroke(Color.BLACK);
+        rectColour3.setStroke(Color.BLACK);
+        rectColourAverage.setStroke(Color.BLACK);
+
+        rectColourHover.setFill(Color.SNOW);
+        rectColour1.setFill(Color.SNOW);
+        rectColour2.setFill(Color.SNOW);
+        rectColour3.setFill(Color.SNOW);
+        rectColourAverage.setFill(Color.SNOW);
+
+        // label each rectangle
+        VBox hoverBox = createLabeledRect("Hover", rectColourHover);
+        VBox rect1Box = createLabeledRect("Colour 1", rectColour1);
+        VBox rect2Box = createLabeledRect("Colour 2", rectColour2);
+        VBox rect3Box = createLabeledRect("Colour 3", rectColour3);
+        VBox averageBox = createLabeledRect("Average Colour", rectColourAverage);
+
+        // put 3 colour rects in hbox
+        colourCalibrationContainer.getChildren().setAll(rect1Box, rect2Box, rect3Box);
+        colourCalibrationContainer2.getChildren().setAll(averageBox, hoverBox);
+
+        // put hbox, average, and hover in vbox
+        colourCalibrationContainerVBOX.getChildren().setAll(colourCalibrationContainer, colourCalibrationContainer2);
+
+        // add to main container
+        imageContainer.getChildren().setAll(originalImageView, colourCalibrationContainerVBOX);
+
+        // shows colour hovered over
+        originalImageView.setOnMouseMoved(event -> {
+            int x = (int) event.getX();
+            int y = (int) event.getY();
+
+            PixelReader reader = resized.getPixelReader();
+            Color hovered = reader.getColor(x, y);
+
+            rectColourHover.setFill(hovered);
         });
 
+        // click to select colour
+        originalImageView.setOnMouseClicked(event -> {
+            int x = (int) event.getX();
+            int y = (int) event.getY();
 
+            PixelReader reader = resized.getPixelReader();
+            Color clicked = reader.getColor(x, y);
+
+            selectedColours.add(clicked);
+            updateAverageSelectedColour();
+
+            rectColourAverage.setFill(selectedColour);
+
+            switch (numColourSelected) {
+                case 0 -> rectColour1.setFill(clicked);
+                case 1 -> rectColour2.setFill(clicked);
+                case 2 -> rectColour3.setFill(clicked);
+            }
+
+            numColourSelected++;
+            System.out.println("Selected colours: " + selectedColours.size());
+
+            if (numColourSelected >= 3) {
+                originalImageView.setOnMouseMoved(null);
+                originalImageView.setOnMouseClicked(null);
+                System.out.println("Calibration complete.");
+                imageProcessed = false;
+                preprocessImage();
+            }
+        });
+    }
+
+    private VBox createLabeledRect(String labelText, Rectangle rect) {
+        Label label = new Label(labelText);
+        VBox vbox = new VBox(5);
+        vbox.getChildren().addAll(label, rect);
+        return vbox;
     }
 
     private void updateAverageSelectedColour() {
@@ -176,6 +279,7 @@ public class Controller {
         PixelReader reader = image.getPixelReader();
         int[] grid = new int[width * height];
 
+        double colourThreshold = 0.3;
         double thresholdSquared = colourThreshold * colourThreshold;
 
         for (int y = 0; y < height; y++) {
@@ -312,7 +416,6 @@ public class Controller {
         int height = (int) resized.getHeight();
 
         WritableImage output = new WritableImage(width, height);
-        PixelReader reader = resized.getPixelReader();
         PixelWriter writer = output.getPixelWriter();
 
         for (int y = 0; y < height; y++) {
@@ -405,22 +508,15 @@ public class Controller {
 
         imageContainer.getChildren().setAll(originalImageView, canvas);
 
-        colourOneLeaf = true;
         System.out.println("Click on a leaf in the image to recolour it.");
 
         canvas.setOnMouseClicked(event -> {
-            if (!colourOneLeaf) return;
-
             Image result = colourClickedCluster(event, clusterSizes);
             if (result == null) return;
 
-            // update canvas with recoloured leaf
-            graphicsContextTSP.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+            // graphicsContextTSP.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
             graphicsContextTSP.drawImage(result, 0, 0);
-
-            colourOneLeaf = false;
         });
-
     }
 
     private Image colourClickedCluster(MouseEvent mouseEvent, Map<Integer, Integer> map) {
@@ -448,15 +544,8 @@ public class Controller {
                 int currentPixel = (y * width) + x;
                 int root = unionFind.find(currentPixel);
 
-                if (map.containsKey(root)) {
-                    if (root == userRoot)
-                        writer.setColor(x, y, clusterColour);
-                    else
-                        writer.setColor(x, y, Color.WHITE);
-                } else {
-                    writer.setColor(x, y, Color.BLACK);
-                }
-
+                if (root == userRoot) writer.setColor(x, y, clusterColour);
+                else writer.setColor(x, y, Color.TRANSPARENT);
             }
         }
 
@@ -627,12 +716,9 @@ public class Controller {
 
         imageContainer.getChildren().setAll(originalImageView, canvas);
 
-        chooseStartNodeTSP = true;
         System.out.println("Click on a leaf.");
 
         canvas.setOnMouseClicked(event -> {
-            if (!chooseStartNodeTSP) return;
-
             Node start = findClickedNode(event);
             if (start == null) return;
 
@@ -641,8 +727,6 @@ public class Controller {
 
             // animate the path
             animateTSP(path, graphicsContextTSP);
-
-            chooseStartNodeTSP = false;
         });
 
     }
@@ -654,7 +738,6 @@ public class Controller {
         int userY = (int) mouseEvent.getY();
 
         int width = (int) resized.getWidth();
-        int height = (int) resized.getHeight();
 
         int userPixel = (userY * width) + userX;
 
@@ -664,8 +747,6 @@ public class Controller {
 
         return new Node(userRoot, userX, userY);
     }
-
-
 
     private record Node(int root, double x, double y) {}
 
@@ -697,7 +778,6 @@ public class Controller {
 
         return (distX * distX) + (distY *  distY);
     }
-
 
     private MyList<Node> nearestNeighbour(MyList<Node> nodes, Node start) {
 
@@ -776,27 +856,27 @@ public class Controller {
         // draw boundary boxes over image
         Canvas canvas = drawBounds(resized, boundingCoords, null);
 
-        displayTooltip = true;
-        canvas.setOnMouseClicked(event -> {
-            if (!displayTooltip) return;
+        imageContainer.getChildren().setAll(originalImageView, canvas);
 
+        Tooltip tooltip = new Tooltip();
+        tooltip.setShowDelay(Duration.millis(100));
+        tooltip.setHideDelay(Duration.millis(100));
+
+        canvas.setOnMouseClicked(event -> {
             Node clickedNode = findClickedNode(event);
             if (clickedNode == null) return;
 
             int root = clickedNode.root;
 
-            Tooltip tooltip = new Tooltip("Leaf/Cluster Number: " + clusterRanks.get(root) + "\nSize (in pixels): " + clusterSizes.get(root));
+            tooltip.setText(
+                    "Leaf/Cluster Number: " + clusterRanks.get(root) +
+                    "\nSize (in pixels): " + clusterSizes.get(root)
+            );
 
-            int x = (int) event.getX();
-            int y = (int) event.getY();
-
-            Rectangle rectangle = new Rectangle(x, y);
-
-            Tooltip.install(rectangle, tooltip);
-
-            displayTooltip = false;
+            Point2D screenPoint = canvas.localToScreen(event.getX(), event.getY());
+            tooltip.hide();
+            tooltip.show(canvas, screenPoint.getX(), screenPoint.getY());
         });
-
     }
 
 }
