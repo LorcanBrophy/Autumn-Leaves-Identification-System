@@ -13,6 +13,7 @@ import org.openjdk.jmh.Main;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.RunnerException;
 
+import com.example.dsa2_ca1.model.UnionFind;
 import com.example.dsa2_ca1.controller.Controller;
 import javafx.scene.image.Image;
 
@@ -31,33 +32,50 @@ public class MyBenchmark {
 
     private Controller controller;
     private Image testImage;
-    public MyList<int[]> data;
+    private MyList<int[]> data;
+    private int[] binaryGrid;
+    private UnionFind unionFind;
 
     @Setup(Level.Iteration)
     public void setup() {
         controller = new Controller();
-
         new JFXPanel();
 
-
-        testImage = new Image("/com/example/dsa2_ca1/autumn.png", 512, 512, true, false);
-
+        testImage = new Image("/com/example/dsa2_ca1/autumn.png", 512, 512, false, false);
         controller.selectedColour = Color.color(0.886, 0.741, 0.8, 1.00);
 
-        data = new MyArrayList<>(1000);
-        for (int i = 0; i < 1000; i++) {
+        binaryGrid = controller.buildBinaryGrid(testImage);
+        unionFind = controller.buildUnionFind(binaryGrid, 512, 512);
+
+
+        data = new MyArrayList<>(10000);
+        for (int i = 0; i < 10000; i++) {
             data.add(new int[]{i, (int)(Math.random() * 10000)});
         }
     }
 
-    @Benchmark
-    public void bubbleSortBM() {
-        controller.bubbleSort(data);
-    }
+    // BM for main algo
 
     @Benchmark
     public void buildBinaryGridBM() {
         controller.buildBinaryGrid(testImage);
+    }
+
+    @Benchmark
+    public void buildUnionFindBM() {
+        controller.buildUnionFind(binaryGrid, 512, 512);
+    }
+
+    @Benchmark
+    public void buildValidClustersBM() {
+        controller.buildValidClusters(binaryGrid, unionFind);
+    }
+
+    // BM for sorting nodes
+
+    @Benchmark
+    public void insertionSortBM() {
+        controller.insertionSort(data);
     }
 
     public static void main(String[] args) throws RunnerException, IOException {

@@ -295,7 +295,7 @@ public class Controller {
         unionFind = buildUnionFind(binaryGrid, width, height);
 
         // 3. get clusters
-        clusterSizes = buildValidClusters();
+        clusterSizes = buildValidClusters(binaryGrid, unionFind);
 
         // 4. get clusterRanks
         clusterRanks = orderClusters(clusterSizes);
@@ -349,7 +349,7 @@ public class Controller {
     }
 
     // step 2
-    private UnionFind buildUnionFind(int[] grid, int width, int height) {
+    public UnionFind buildUnionFind(int[] grid, int width, int height) {
         UnionFind uf = new UnionFind(width * height);
 
         for (int y = 0; y < height; y++) {
@@ -381,7 +381,7 @@ public class Controller {
     }
 
     // step 3
-    private Map<Integer, Integer> buildValidClusters() {
+    public Map<Integer, Integer> buildValidClusters(int[] binaryGrid, UnionFind unionFind) {
 
         Map<Integer, Integer> allClusters = new HashMap<>();
 
@@ -719,7 +719,7 @@ public class Controller {
         }
 
         // call separate bubble sort method
-        bubbleSort(clusters);
+        insertionSort(clusters);
 
         // assign ranks
         Map<Integer, Integer> clusterRanks = new HashMap<>();
@@ -731,15 +731,17 @@ public class Controller {
         return clusterRanks;
     }
 
-    public void bubbleSort(MyList<int[]> clusters) {
-        for (int i = 0; i < clusters.size() - 1; i++) {
-            for (int j = 0; j < clusters.size() - 1 - i; j++) {
-                if (clusters.get(j)[1] < clusters.get(j + 1)[1]) {
-                    int[] temp = clusters.get(j);
-                    clusters.set(j, clusters.get(j + 1));
-                    clusters.set(j + 1, temp);
-                }
+    public void insertionSort(MyList<int[]> clusters) {
+        for (int i = 1; i < clusters.size(); i++) {
+            int[] keyArr = clusters.get(i);
+            int size = keyArr[1];
+
+            int j = i - 1;
+            while (j >= 0 && clusters.get(j)[1] < size) {
+                clusters.set(j + 1, clusters.get(j));
+                j--;
             }
+            clusters.set(j + 1, keyArr);
         }
     }
 
@@ -789,6 +791,8 @@ public class Controller {
 
             // animate the path
             animateTSP(path, graphicsContextTSP, boundingCoords);
+
+            //canvas.setOnMouseClicked(null);
         });
 
     }
@@ -880,7 +884,7 @@ public class Controller {
     private void animateTSP(MyList<Node> path, GraphicsContext graphicsContext, Map<Integer, int[]> boundingCoords) {
 
         Timeline timeline = new Timeline();
-        double interval = 6000.0 / path.size(); // ms
+        double interval = 7000.0 / path.size(); // ms
 
         for (int i = 1; i < path.size(); i++) {
 
@@ -891,19 +895,21 @@ public class Controller {
 
                 // draw red line
                 graphicsContext.setStroke(Color.RED);
-                graphicsContext.setLineWidth(1.0);
+                graphicsContext.setLineWidth(2.0);
                 graphicsContext.strokeLine(previous.x(), previous.y(), current.x(), current.y());
 
-                /*int[] prevBounds = boundingCoords.get(previous.root);
+                int[] prevBounds = boundingCoords.get(previous.root);
                 if (prevBounds != null) {
                     int minX = prevBounds[0];
                     int maxX = prevBounds[1];
                     int minY = prevBounds[2];
                     int maxY = prevBounds[3];
 
-                    graphicsContext.setStroke(Color.BLUE);
-                    graphicsContext.strokeRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
-                }*/
+                    for (int iter = 0; iter < 4; iter++) {
+                        graphicsContext.setStroke(Color.BLUE);
+                        graphicsContext.strokeRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+                    }
+                }
 
                 int[] bounds = boundingCoords.get(current.root);
 
@@ -913,11 +919,11 @@ public class Controller {
                     int minY = bounds[2];
                     int maxY = bounds[3];
 
-                    graphicsContext.setStroke(Color.WHITE);
-                    graphicsContext.strokeRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+                    for (int iter = 0; iter < 4; iter++) {
+                        graphicsContext.setStroke(Color.YELLOW);
+                        graphicsContext.strokeRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+                    }
 
-                    graphicsContext.setStroke(Color.YELLOW);
-                    graphicsContext.strokeRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
                 }
             });
 
