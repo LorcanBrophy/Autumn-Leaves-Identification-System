@@ -3,6 +3,7 @@ package com.example.dsa2_ca1.benchmark;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import com.example.dsa2_ca1.model.MyArrayList;
@@ -41,12 +42,11 @@ public class MyBenchmark {
         controller = new Controller();
         new JFXPanel();
 
-        testImage = new Image("/com/example/dsa2_ca1/autumn.png", 512, 512, false, false);
+        testImage = new Image(Objects.requireNonNull(getClass().getResource("/com/example/dsa2_ca1/autumn.png")).toExternalForm(), 512, 512, false, false);
         controller.selectedColour = Color.color(0.886, 0.741, 0.8, 1.00);
 
         binaryGrid = controller.buildBinaryGrid(testImage);
         unionFind = controller.buildUnionFind(binaryGrid, 512, 512);
-
 
         data = new MyArrayList<>(10000);
         for (int i = 0; i < 10000; i++) {
