@@ -25,6 +25,7 @@ import com.example.dsa2_ca1.model.UnionFind;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
@@ -445,6 +446,14 @@ public class Controller {
         imageContainer.getChildren().setAll(originalImageView);
     }
 
+    // EXIT
+
+    @FXML
+    private void onExit() {
+        Platform.exit();
+    }
+
+
     // BW IMAGE CONVERSION
 
     public void onDisplayBW() {
@@ -718,7 +727,6 @@ public class Controller {
             clusters.add(new int[]{entry.getKey(), entry.getValue()});
         }
 
-        // call separate bubble sort method
         insertionSort(clusters);
 
         // assign ranks

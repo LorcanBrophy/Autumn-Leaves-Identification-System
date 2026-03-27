@@ -1,24 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.image.ImageView?>
-
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.Menu?>
-
 <?import javafx.scene.layout.BorderPane?>
-
 <?import javafx.scene.layout.HBox?>
-
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.VBox?>
-
-<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.RadioMenuItem?>
 <?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.control.CheckMenuItem?>
+
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.example.dsa2_ca1.controller.Controller">
     <top>
         <VBox alignment="CENTER" fx:id="topBox">
@@ -29,7 +21,7 @@
 
                 <Menu text="File">
                     <MenuItem text="Open..." onAction="#onChooseFile"/>
-                    <MenuItem text="Exit"/>
+                    <MenuItem text="Exit" onAction="#onExit"/>
                 </Menu>
 
                 <Menu text="Setup">
@@ -70,8 +62,6 @@
 
     <bottom>
         <HBox fx:id="bottomBox" spacing="10" alignment="CENTER">
-            <Button text="Search For Total Leaves" onAction="#onSearchButtonClicked"/>
-            <Button text="Calibrate Colours" onAction="#calibrateColour"/>
         </HBox>
     </bottom>
 
