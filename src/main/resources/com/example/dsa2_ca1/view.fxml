@@ -30,8 +30,8 @@
 
                 <Menu text="Operations">
                     <MenuItem text="Total Leaves" onAction="#onSearchButtonClicked"/>
-                    <RadioMenuItem text="Animate TSP" toggleGroup="$viewToggleGroup" onAction="#onTSP"/>
-                    <RadioMenuItem text="Show Tooltip" toggleGroup="$viewToggleGroup" onAction="#onDisplayTooltip"/>
+                    <MenuItem text="Animate TSP"  onAction="#onTSP"/>
+                    <MenuItem text="Show Tooltip"  onAction="#onDisplayTooltip"/>
                 </Menu>
 
                 <Menu text="Image">
